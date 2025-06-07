@@ -1,0 +1,25 @@
+{
+  "identifier" : "F395A1D2",
+  "payload" : {
+    "products" : [
+      {
+        "displayPrice" : "9.99",
+        "family" : "auto_renewable",
+        "internalID" : "echonote.premium.yearly",
+        "localizations" : [
+          {
+            "description" : "Unlock all premium features.",
+            "displayName" : "EchoNote Premium",
+            "locale" : "en_US"
+          }
+        ],
+        "productID" : "com.yourappname.echonote.premium.yearly",
+        "type" : "auto_renewable"
+      }
+    ]
+  },
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+} 
