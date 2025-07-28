@@ -35,8 +35,8 @@ class SpeechRecognitionManager {
                 // 5. Start recognition task
                 recognizer.recognitionTask(with: request) { (result, error) in
                     guard let result = result, error == nil else {
-                        if let error = error {
-                            print("Recognition failed: \\(error.localizedDescription)")
+                        if error != nil {
+                            print("Recognition failed.")
                         }
                         completion(nil)
                         return

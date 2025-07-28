@@ -3,25 +3,37 @@ import AVFoundation
 
 class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
-    var audioPlayer: AVAudioPlayer?
+    private var audioPlayer: AVAudioPlayer?
     
     @Published var isPlaying = false
     @Published var progress: Double = 0.0
     
     private var progressTimer: Timer?
     
+    override init() {
+        super.init()
+    }
+    
     func startPlayback(voiceNote: VoiceNote) {
+        // Stop any current playback first
+        stopPlayback()
+        
         let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let audioURL = documentPath.appendingPathComponent(voiceNote.filename)
         
-        // Check if file exists
+        print("🎵 Starting playback for VoiceNote:")
+        print("🎵 Title: \(voiceNote.title)")
+        print("🎵 Filename: \(voiceNote.filename)")
+        print("🎵 Created: \(voiceNote.createdAt)")
+        print("🎵 Full path: \(audioURL.path)")
+        print("🎵 File exists: \(FileManager.default.fileExists(atPath: audioURL.path))")
+        
         guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            print("Audio file not found at \\(audioURL.path)")
+            print("❌ Audio file not found at \\(audioURL.path)")
             return
         }
         
         let playbackSession = AVAudioSession.sharedInstance()
-        
         do {
             try playbackSession.setCategory(.playback, mode: .default)
             try playbackSession.setActive(true)
@@ -30,27 +42,49 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+            // Force fresh load of audio data to avoid caching issues
+            let audioData = try Data(contentsOf: audioURL)
+            print("🎵 Loaded audio data: \(audioData.count) bytes")
+            
+            // Create completely new AVAudioPlayer instance
+            audioPlayer = try AVAudioPlayer(data: audioData)
             audioPlayer?.delegate = self
+            audioPlayer?.prepareToPlay()
+            
+            print("🎵 AVAudioPlayer created successfully")
+            print("🎵 Audio duration: \(audioPlayer?.duration ?? 0) seconds")
+            
             audioPlayer?.play()
             isPlaying = true
             startProgressTimer()
+            
+            print("🎵 Playback started successfully")
         } catch {
-            print("Playback failed: \\(error.localizedDescription)")
+            print("❌ Playback failed: \(error.localizedDescription)")
         }
     }
     
     func stopPlayback() {
-        audioPlayer?.stop()
-        isPlaying = false
-        stopProgressTimer()
+        print("🛑 Stopping current playback...")
+        
+        progressTimer?.invalidate()
+        progressTimer = nil
+        
+        if let player = audioPlayer {
+            player.stop()
+            player.delegate = nil
+            print("🛑 AudioPlayer stopped and delegate removed")
+        }
         audioPlayer = nil
         
-        // Deactivate the audio session to allow other audio to play
+        isPlaying = false
+        progress = 0.0
+        
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            print("🛑 Audio session deactivated")
         } catch {
-            print("Failed to deactivate audio session: \\(error.localizedDescription)")
+            print("❌ Failed to deactivate audio session: \(error.localizedDescription)")
         }
     }
     
@@ -68,7 +102,7 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     }
     
     private func startProgressTimer() {
-        progressTimer?.invalidate() // Stop any existing timer
+        progressTimer?.invalidate()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let player = self.audioPlayer else { return }
             self.progress = player.currentTime / player.duration
@@ -80,7 +114,6 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         progressTimer = nil
     }
     
-    // MARK: - AVAudioPlayerDelegate
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         isPlaying = false
         progress = 0.0

@@ -13,6 +13,15 @@ struct ContentView: View {
     @Query(sort: \VoiceNote.createdAt, order: .reverse) private var voiceNotes: [VoiceNote]
     @State private var isShowingRecordingView = false
     @State private var isShowingSettingsView = false
+    
+    // For Rename Alert
+    @State private var showRenameAlert = false
+    @State private var noteToRename: VoiceNote?
+    @State private var newName: String = ""
+
+    // For Delete Confirmation Alert
+    @State private var showDeleteConfirmation = false
+    @State private var noteToDelete: VoiceNote?
 
     var body: some View {
         NavigationStack {
@@ -21,11 +30,43 @@ struct ContentView: View {
                 if !voiceNotes.isEmpty {
                     List {
                         ForEach(voiceNotes) { note in
-                            NavigationLink(destination: DetailView(voiceNote: note)) {
+                            NavigationLink(value: note.persistentModelID) {
                                 VoiceNoteRow(voiceNote: note)
                             }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    noteToDelete = note
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                
+                                Button {
+                                    noteToRename = note
+                                    newName = note.title
+                                    showRenameAlert = true
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
+                            .contextMenu {
+                                Button {
+                                    noteToRename = note
+                                    newName = note.title
+                                    showRenameAlert = true
+                                } label: {
+                                    Label("Rename", systemImage: "pencil")
+                                }
+                                
+                                Button(role: .destructive) {
+                                    noteToDelete = note
+                                    showDeleteConfirmation = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
-                        .onDelete(perform: deleteItems)
                     }
                     .listStyle(.plain)
                 } else {
@@ -64,6 +105,9 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("EchoNote")
+            .navigationDestination(for: VoiceNote.ID.self) { noteID in
+                DetailView(voiceNoteID: noteID)
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
@@ -79,25 +123,42 @@ struct ContentView: View {
             .sheet(isPresented: $isShowingSettingsView) {
                 SettingsView()
             }
+            .alert("Rename Recording", isPresented: $showRenameAlert) {
+                TextField("New name", text: $newName)
+                Button("Save", action: renameNote)
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Enter a new name for your recording.")
+            }
+            .alert("Delete Recording", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive, action: executeDelete)
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to delete this recording? This action cannot be undone.")
+            }
         }
         .preferredColorScheme(.dark)
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                let noteToDelete = voiceNotes[index]
-                // Also delete the audio file from disk
-                let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                let audioURL = documentPath.appendingPathComponent(noteToDelete.filename)
-                
-                do {
-                    try FileManager.default.removeItem(at: audioURL)
-                } catch {
-                    print("Failed to delete audio file during list swipe: \\(error.localizedDescription)")
-                }
+    private func renameNote() {
+        if let note = noteToRename {
+            note.title = newName
+            try? modelContext.save()
+        }
+    }
 
-                modelContext.delete(noteToDelete)
+    private func executeDelete() {
+        if let note = noteToDelete {
+            modelContext.delete(note)
+            
+            // Also delete the audio file from disk
+            let documentPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let audioURL = documentPath.appendingPathComponent(note.filename)
+            
+            do {
+                try FileManager.default.removeItem(at: audioURL)
+            } catch {
+                print("Failed to delete audio file during context menu delete: \\(error.localizedDescription)")
             }
         }
     }
