@@ -28,6 +28,12 @@ struct RecordingView: View {
         let milliseconds = Int((elapsedTime.truncatingRemainder(dividingBy: 1)) * 100)
         return String(format: "%02d:%02d.%02d", minutes, seconds, milliseconds)
     }
+    
+    private var formattedElapsedTimeDisplay: String {
+        let minutes = Int(elapsedTime) / 60
+        let seconds = Int(elapsedTime) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
 
     // Define a unique temporary URL for each recording session
     private var temporaryRecordingURL: URL {
@@ -53,34 +59,15 @@ struct RecordingView: View {
                 VStack(spacing: 0) {
                     Spacer(minLength: 40)
                     
-                    // Simplified status indicator
-                    VStack(spacing: 16) {
-                        // Modern recording status badge
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(isRecording ? AppColors.primary : AppColors.textSecondary.opacity(0.3))
-                                .frame(width: 8, height: 8)
-                                .scaleEffect(pulseAnimation ? 1.2 : 1.0)
-                                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: pulseAnimation)
-                            
-                            Text(isRecording ? "Recording" : "Ready")
-                                .font(.custom("SF Pro Display", size: 14, relativeTo: .caption))
-                                .fontWeight(.medium)
-                                .foregroundColor(isRecording ? AppColors.primary : AppColors.textSecondary)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(AppColors.cardBackground.opacity(0.8))
-                        )
-                        
-                        // Simplified timer display
-                        Text(formattedElapsedTime)
-                            .font(.custom("SF Mono", size: 48, relativeTo: .largeTitle))
-                            .fontWeight(.light)
+                    // Simplified and modern status indicator
+                    VStack(spacing: 24) {
+                        // Clean timer display
+                        Text(isRecording ? formattedElapsedTime : formattedElapsedTimeDisplay)
+                            .font(.custom("SF Mono", size: 72, relativeTo: .largeTitle))
+                            .fontWeight(.ultraLight)
                             .foregroundColor(AppColors.textPrimary)
                             .contentTransition(.numericText())
+                            .shadow(color: AppColors.primary.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
                     
                     Spacer(minLength: 80)
@@ -192,8 +179,8 @@ struct RecordingView: View {
                                 .buttonStyle(ScaleButtonStyle())
                             } else {
                                 VStack(spacing: 12) {
-                                    Text(hasMicrophoneAccess ? "Tap to Start Recording" : "Microphone Access Required")
-                                        .font(.custom("SF Pro Display", size: 20, relativeTo: .title3))
+                                    Text(hasMicrophoneAccess ? "Tap to Start" : "Microphone Access Required")
+                                        .font(.custom("SF Pro Display", size: 18, relativeTo: .title3))
                                         .fontWeight(.semibold)
                                         .foregroundColor(AppColors.textPrimary)
                                         .multilineTextAlignment(.center)
@@ -218,24 +205,24 @@ struct RecordingView: View {
                             HStack(spacing: 16) {
                                 ZStack {
                                     Circle()
-                                        .fill(AppColors.accent.opacity(0.2))
+                                        .fill(AppColors.primary.opacity(0.15))
                                         .frame(width: 40, height: 40)
                                     
                                     Image(systemName: "lightbulb.fill")
                                         .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(AppColors.accent)
+                                        .foregroundColor(AppColors.primary)
                                 }
                                 
-                                                                 VStack(alignment: .leading, spacing: 4) {
-                                     Text("Pro Tips")
-                                         .font(.custom("SF Pro Display", size: 16, relativeTo: .body))
-                                         .fontWeight(.semibold)
-                                         .foregroundColor(AppColors.textPrimary)
-                                     
-                                     Text("Speak clearly for better transcription")
-                                         .font(.custom("SF Pro Text", size: 14, relativeTo: .caption))
-                                         .foregroundColor(AppColors.textSecondary)
-                                 }
+                                                                                                 VStack(alignment: .leading, spacing: 4) {
+                                    Text("Pro Tips")
+                                        .font(.custom("SF Pro Display", size: 16, relativeTo: .body))
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(AppColors.textPrimary)
+                                    
+                                    Text("Speak clearly for better results")
+                                        .font(.custom("SF Pro Text", size: 14, relativeTo: .caption))
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
                                 
                                 Spacer()
                             }

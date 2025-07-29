@@ -15,6 +15,7 @@ struct SettingsView: View {
     
     // State for the picker
     @State private var selectedLanguage: String
+    @State private var showLanguagePicker = false
     
     // Supported Languages
     private let supportedLanguages = [
@@ -79,16 +80,87 @@ struct SettingsView: View {
                             .padding(.horizontal, 20)
                             
                             // Language Selection
-                            VStack(spacing: 12) {
-                                ForEach(supportedLanguages, id: \.identifier) { language in
-                                    SettingsLanguageRow(
-                                        language: language,
-                                        isSelected: selectedLanguage == language.identifier,
-                                        onSelect: {
-                                            selectedLanguage = language.identifier
-                                            UserDefaults.standard.set(selectedLanguage, forKey: transcriptionLanguageKey)
+                            VStack(spacing: 16) {
+                                HStack(spacing: 12) {
+                                    // Current selection display
+                                    HStack(spacing: 12) {
+                                        Text(getCurrentLanguageFlag())
+                                            .font(.system(size: 24))
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(getCurrentLanguageName())
+                                                .font(.custom("SF Pro Display", size: 16, relativeTo: .body))
+                                                .foregroundColor(AppColors.textPrimary)
+                                            
+                                            Text("Current language")
+                                                .font(.custom("SF Pro Text", size: 14, relativeTo: .caption))
+                                                .foregroundColor(AppColors.textSecondary)
                                         }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(AppColors.primary.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                .stroke(AppColors.primary.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
+                                .onTapGesture {
+                                    showLanguagePicker.toggle()
+                                }
+                                
+                                // Language picker sheet
+                                if showLanguagePicker {
+                                    VStack(spacing: 8) {
+                                        ForEach(supportedLanguages, id: \.identifier) { language in
+                                            Button(action: {
+                                                selectedLanguage = language.identifier
+                                                UserDefaults.standard.set(selectedLanguage, forKey: transcriptionLanguageKey)
+                                                showLanguagePicker = false
+                                            }) {
+                                                HStack(spacing: 12) {
+                                                    Text(language.flag)
+                                                        .font(.system(size: 20))
+                                                    
+                                                    Text(language.name)
+                                                        .font(.custom("SF Pro Display", size: 16, relativeTo: .body))
+                                                        .foregroundColor(AppColors.textPrimary)
+                                                    
+                                                    Spacer()
+                                                    
+                                                    if selectedLanguage == language.identifier {
+                                                        Image(systemName: "checkmark")
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(AppColors.primary)
+                                                    }
+                                                }
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 12)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                        .fill(selectedLanguage == language.identifier ? AppColors.primary.opacity(0.1) : Color.clear)
+                                                )
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .fill(AppColors.cardBackground)
+                                            .shadow(color: AppColors.primary.opacity(0.1), radius: 8, x: 0, y: 4)
                                     )
+                                    .transition(.opacity.combined(with: .scale))
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -131,7 +203,9 @@ struct SettingsView: View {
                             
                             // Premium Card
                             Button(action: {
-                                // TODO: Navigate to Premium View
+                                // Navigate to Premium View
+                                dismiss()
+                                // TODO: Show PremiumView from ContentView
                             }) {
                                 HStack(spacing: 16) {
                                     VStack(alignment: .leading, spacing: 8) {
@@ -286,6 +360,14 @@ struct SettingsView: View {
     
     private func appVersion() -> String {
         return Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "N/A"
+    }
+    
+    private func getCurrentLanguageName() -> String {
+        return supportedLanguages.first { $0.identifier == selectedLanguage }?.name ?? "English"
+    }
+    
+    private func getCurrentLanguageFlag() -> String {
+        return supportedLanguages.first { $0.identifier == selectedLanguage }?.flag ?? "🇺🇸"
     }
 }
 

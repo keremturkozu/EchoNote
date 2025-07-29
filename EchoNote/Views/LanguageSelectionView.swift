@@ -176,6 +176,8 @@ struct LanguageSelectionView: View {
                         .padding(.horizontal, 20)
                     }
                     
+                    Spacer(minLength: 100) // Add space to prevent overlap with bottom button
+                    
                     Spacer(minLength: 40)
                 }
             }

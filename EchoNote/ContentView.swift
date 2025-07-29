@@ -37,6 +37,8 @@ struct ContentView: View {
     @State private var isShowingSettingsView = false
     @State private var isOnboardingComplete = false
     @State private var isLanguageSelectionComplete = false
+    @State private var isLaunchComplete = false
+    @State private var shouldShowPremium = false
     
     // For Rename Alert
     @State private var showRenameAlert = false
@@ -52,10 +54,20 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if !isOnboardingComplete {
+            if !isLaunchComplete {
+                LaunchScreenView(
+                    isLaunchComplete: $isLaunchComplete,
+                    shouldShowPremium: $shouldShowPremium
+                )
+            } else if !isOnboardingComplete {
                 OnBoardingView(isOnboardingComplete: $isOnboardingComplete)
             } else if !isLanguageSelectionComplete {
                 LanguageSelectionView(isLanguageSelectionComplete: $isLanguageSelectionComplete)
+            } else if shouldShowPremium {
+                ModernPaywallView()
+                    .onDisappear {
+                        shouldShowPremium = false
+                    }
             } else {
                 NavigationStack {
             ZStack {
@@ -316,9 +328,16 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // Check if onboarding is complete
-            isOnboardingComplete = UserDefaults.standard.bool(forKey: "isOnboardingComplete")
-            isLanguageSelectionComplete = UserDefaults.standard.bool(forKey: "isLanguageSelectionComplete")
+            setupInitialState()
+        }
+        .onChange(of: isLanguageSelectionComplete) { _, newValue in
+            if newValue {
+                // Language selection completed, now check premium
+                let isSubscribed = UserDefaults.standard.bool(forKey: "isSubscribed")
+                if !isSubscribed {
+                    shouldShowPremium = true
+                }
+            }
         }
     }
 
@@ -329,6 +348,17 @@ struct ContentView: View {
         }
     }
 
+    private func setupInitialState() {
+        // TEMPORARY: Reset UserDefaults for testing
+        UserDefaults.standard.set(false, forKey: "isOnboardingComplete")
+        UserDefaults.standard.set(false, forKey: "isLanguageSelectionComplete")
+        UserDefaults.standard.set(false, forKey: "isSubscribed")
+        
+        // Check if onboarding is complete
+        isOnboardingComplete = UserDefaults.standard.bool(forKey: "isOnboardingComplete")
+        isLanguageSelectionComplete = UserDefaults.standard.bool(forKey: "isLanguageSelectionComplete")
+    }
+    
     private func executeDelete() {
         if let note = noteToDelete {
             modelContext.delete(note)
