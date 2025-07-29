@@ -7,6 +7,7 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     @Published var isPlaying = false
     @Published var progress: Double = 0.0
+    @Published var currentTime: TimeInterval = 0.0
     
     private var progressTimer: Timer?
     
@@ -79,6 +80,7 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         
         isPlaying = false
         progress = 0.0
+        currentTime = 0.0
         
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -105,6 +107,7 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         progressTimer?.invalidate()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let player = self.audioPlayer else { return }
+            self.currentTime = player.currentTime
             self.progress = player.currentTime / player.duration
         }
     }
@@ -117,6 +120,7 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
         isPlaying = false
         progress = 0.0
+        currentTime = 0.0
         stopProgressTimer()
     }
 } 
